@@ -8,13 +8,20 @@ st.set_page_config(
 )
 
 # =========================
-# Título
+# Título + Descrição
 # =========================
 st.markdown(
     """
     <h1 style='text-align:center;'>🎰 Calculadora de Apostas Elegíveis</h1>
-    <p style='text-align:center;color:gray;'>
-    Visualização clara de valores apostados por período
+
+    <p style='text-align:center; font-size:16px; color:#555;'>
+    Para garantir que o jogo está elegível e que o código não foi alterado ou quebrado,
+    valide sempre na aba oficial de promoções:
+    <br><br>
+    <a href="https://start.bet.br/promotions/1976" target="_blank"
+       style="color:#1f77b4; font-weight:bold;">
+       👉 Promoções – Jogos Elegíveis (StartBet)
+    </a>
     </p>
     """,
     unsafe_allow_html=True
@@ -79,20 +86,15 @@ if uploaded_file:
         end_time = st.text_input("⌨️ Hora final (HH:MM)", value="23:59")
 
     try:
-        start_dt = datetime.strptime(
-            f"{start_date} {start_time}", "%Y-%m-%d %H:%M"
-        )
-        end_dt = datetime.strptime(
-            f"{end_date} {end_time}", "%Y-%m-%d %H:%M"
-        )
+        start_dt = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
+        end_dt = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
 
         df_filtered = df[
             (df["Creation Date"] >= start_dt) &
             (df["Creation Date"] <= end_dt)
         ]
-
     except ValueError:
-        st.error("⚠️ Horário inválido. Use HH:MM (ex: 09:30)")
+        st.error("⚠️ Horário inválido. Use HH:MM (ex: 14:30)")
         st.stop()
 
     st.divider()
@@ -114,28 +116,43 @@ if uploaded_file:
     total_geral = total_elegiveis + total_nao_elegiveis
 
     # =========================
-    # Cards de valores
+    # Cards customizados (cores)
     # =========================
     st.subheader("💵 Resumo Financeiro")
 
     colA, colB, colC = st.columns(3)
 
     with colA:
-        st.metric(
-            "🟢 Total Geral Apostado",
-            f"R$ {total_geral:,.2f}"
+        st.markdown(
+            f"""
+            <div style="padding:20px; border-radius:12px; background:#f5f5f5; text-align:center;">
+                <h4>Total Geral Apostado</h4>
+                <h2>R$ {total_geral:,.2f}</h2>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
     with colB:
-        st.metric(
-            "🔵 Total Jogos Elegíveis",
-            f"R$ {total_elegiveis:,.2f}"
+        st.markdown(
+            f"""
+            <div style="padding:20px; border-radius:12px; background:#e8f5e9; text-align:center;">
+                <h4 style="color:#2e7d32;">Jogos Elegíveis</h4>
+                <h2 style="color:#2e7d32;">R$ {total_elegiveis:,.2f}</h2>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
     with colC:
-        st.metric(
-            "🔴 Total Jogos Não Elegíveis",
-            f"R$ {total_nao_elegiveis:,.2f}"
+        st.markdown(
+            f"""
+            <div style="padding:20px; border-radius:12px; background:#fdecea; text-align:center;">
+                <h4 style="color:#c62828;">Jogos Não Elegíveis</h4>
+                <h2 style="color:#c62828;">R$ {total_nao_elegiveis:,.2f}</h2>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
     st.divider()
