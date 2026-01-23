@@ -157,22 +157,24 @@ if uploaded_file:
     # Função tabela com horários
     # =========================
     def gerar_tabela(df_base):
-        tabela = (
-            df_base
-            .groupby("Game Name")
-            .agg(
-                Total_Apostado=("Bet", "sum"),
-                Primeira_Aposta=("Creation Date", "min"),
-                Ultima_Aposta=("Creation Date", "max")
-            )
-            .reset_index()
-            .sort_values(by="Total_Apostado", ascending=False)
+    tabela = (
+        df_base
+        .groupby("Game Name")
+        .agg(
+            Quantidade_Rodadas=("Bet", "count"),
+            Total_Apostado=("Bet", "sum"),
+            Primeira_Aposta=("Creation Date", "min"),
+            Ultima_Aposta=("Creation Date", "max")
         )
+        .reset_index()
+        .sort_values(by="Total_Apostado", ascending=False)
+    )
 
-        tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
-        tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+    tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+    tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
 
-        return tabela
+    return tabela
+
 
     # =========================
     # Jogos Elegíveis
