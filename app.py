@@ -1,13 +1,30 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
-st.set_page_config(page_title="Calculadora de Apostas Elegíveis", layout="wide")
+st.set_page_config(
+    page_title="Calculadora de Apostas Elegíveis",
+    layout="wide"
+)
 
-st.title("🎰 Calculadora de Valor Apostado - Jogos Elegíveis")
+# =========================
+# Título
+# =========================
+st.markdown(
+    """
+    <h1 style='text-align:center;'>🎰 Calculadora de Apostas Elegíveis</h1>
+    <p style='text-align:center;color:gray;'>
+    Análise de valores apostados por período e elegibilidade de jogos
+    </p>
+    """,
+    unsafe_allow_html=True
+)
 
-# ---------------------------
-# Lista de jogos elegíveis
-# ---------------------------
+st.divider()
+
+# =========================
+# Jogos elegíveis
+# =========================
 JOGOS_ELEGIVEIS = [
     "Fortune Tiger","Fortune Ox","Fortune Mouse","Fortune Rabbit","Tigre Sortudo",
     "Tigrinho Sortudo 1000","Macaco Sortudo","Ratinho Sortudo","Touro Sortudo",
@@ -26,78 +43,118 @@ JOGOS_ELEGIVEIS = [
     "Big Bass Christmas Bash"
 ]
 
-# ---------------------------
-# Upload do CSV
-# ---------------------------
-uploaded_file = st.file_uploader("📤 Faça upload do CSV", type=["csv"])
+# =========================
+# Upload CSV
+# =========================
+uploaded_file = st.file_uploader(
+    "📤 Faça upload do arquivo CSV",
+    type=["csv"]
+)
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    # Padronização
+    # Conversões
     df["Creation Date"] = pd.to_datetime(df["Creation Date"], errors="coerce")
     df["Bet"] = pd.to_numeric(df["Bet"], errors="coerce").fillna(0)
 
-    # ---------------------------
+    st.divider()
+
+    # =========================
     # Filtro de Data e Hora
-    # ---------------------------
+    # =========================
     st.subheader("⏰ Filtro de Data e Hora")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        start_datetime = st.date_input("Data inicial")
-        start_time = st.time_input("Hora inicial")
+        start_date = st.date_input("📅 Data inicial")
 
     with col2:
-        end_datetime = st.date_input("Data final")
-        end_time = st.time_input("Hora final")
+        start_time = st.text_input("⌨️ Hora inicial (HH:MM)", value="00:00")
 
-    start_dt = pd.to_datetime(f"{start_datetime} {start_time}")
-    end_dt = pd.to_datetime(f"{end_datetime} {end_time}")
+    with col3:
+        end_date = st.date_input("📅 Data final")
 
-    df_filtered = df[
-        (df["Creation Date"] >= start_dt) &
-        (df["Creation Date"] <= end_dt)
-    ]
+    with col4:
+        end_time = st.text_input("⌨️ Hora final (HH:MM)", value="23:59")
 
-    # ---------------------------
-    # Separação elegíveis / não elegíveis
-    # ---------------------------
+    try:
+        start_dt = datetime.strptime(
+            f"{start_date} {start_time}", "%Y-%m-%d %H:%M"
+        )
+        end_dt = datetime.strptime(
+            f"{end_date} {end_time}", "%Y-%m-%d %H:%M"
+        )
+
+        df_filtered = df[
+            (df["Creation Date"] >= start_dt) &
+            (df["Creation Date"] <= end_dt)
+        ]
+
+    except ValueError:
+        st.error("⚠️ Formato de hora inválido. Use HH:MM (ex: 14:30)")
+        st.stop()
+
+    st.divider()
+
+    # =========================
+    # Cliente
+    # =========================
+    st.subheader("👤 Cliente(s)")
+    st.info(", ".join(df_filtered["Client"].astype(str).unique()))
+
+    # =========================
+    # Separação
+    # =========================
     df_elegiveis = df_filtered[df_filtered["Game Name"].isin(JOGOS_ELEGIVEIS)]
     df_nao_elegiveis = df_filtered[~df_filtered["Game Name"].isin(JOGOS_ELEGIVEIS)]
 
-    # ---------------------------
-    # Exibição do Cliente
-    # ---------------------------
-    st.subheader("👤 Cliente(s)")
-    st.write(df_filtered["Client"].unique())
+    total_elegiveis = df_elegiveis["Bet"].sum()
+    total_nao_elegiveis = df_nao_elegiveis["Bet"].sum()
 
-    # ---------------------------
-    # Total Apostado (Elegíveis)
-    # ---------------------------
-    total_apostado = df_elegiveis["Bet"].sum()
-    st.metric("💰 Total Apostado em Jogos Elegíveis", f"R$ {total_apostado:,.2f}")
+    # =========================
+    # Cards de valores
+    # =========================
+    colA, colB = st.columns(2)
 
-    # ---------------------------
-    # Valor por jogo elegível
-    # ---------------------------
+    with colA:
+        st.metric(
+            "💰 Total Apostado (Jogos Elegíveis)",
+            f"R$ {total_elegiveis:,.2f}"
+        )
+
+    with colB:
+        st.metric(
+            "🚫 Total Apostado (Não Elegíveis)",
+            f"R$ {total_nao_elegiveis:,.2f}"
+        )
+
+    st.divider()
+
+    # =========================
+    # Jogos Elegíveis
+    # =========================
     st.subheader("🎮 Valor Apostado por Jogo Elegível")
-    jogos_grouped = (
+
+    tabela_elegiveis = (
         df_elegiveis
         .groupby("Game Name")["Bet"]
         .sum()
         .reset_index()
         .sort_values(by="Bet", ascending=False)
     )
-    st.dataframe(jogos_grouped, use_container_width=True)
 
-    # ---------------------------
-    # Jogos não elegíveis
-    # ---------------------------
-    st.subheader("🚫 Jogos NÃO Elegíveis")
+    st.dataframe(tabela_elegiveis, use_container_width=True)
 
-    nao_elegiveis_grouped = (
+    st.divider()
+
+    # =========================
+    # Jogos Não Elegíveis
+    # =========================
+    st.subheader("🚫 Jogos Não Elegíveis")
+
+    tabela_nao_elegiveis = (
         df_nao_elegiveis
         .groupby("Game Name")["Bet"]
         .sum()
@@ -105,20 +162,19 @@ if uploaded_file:
         .sort_values(by="Bet", ascending=False)
     )
 
-    total_nao_elegiveis = df_nao_elegiveis["Bet"].sum()
+    st.dataframe(tabela_nao_elegiveis, use_container_width=True)
 
-    st.write(f"**Total apostado em jogos não elegíveis:** R$ {total_nao_elegiveis:,.2f}")
-    st.dataframe(nao_elegiveis_grouped, use_container_width=True)
+    st.divider()
 
-    # ---------------------------
+    # =========================
     # Exportar CSV
-    # ---------------------------
-    st.subheader("📥 Exportar CSV")
+    # =========================
+    st.subheader("📥 Exportar Dados Filtrados")
 
     csv_export = df_filtered.to_csv(index=False).encode("utf-8")
 
     st.download_button(
-        label="⬇️ Baixar CSV Filtrado",
+        label="⬇️ Baixar CSV",
         data=csv_export,
         file_name="apostas_filtradas.csv",
         mime="text/csv"
