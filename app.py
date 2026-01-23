@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
+# =========================
+# Configuração da página
+# =========================
 st.set_page_config(
     page_title="Calculadora de Apostas Elegíveis",
     layout="wide"
@@ -12,14 +15,14 @@ st.set_page_config(
 # =========================
 st.markdown(
     """
-    <h1 style='text-align:center;'>🎰 Calculadora de Apostas Elegíveis</h1>
+    <h1 style="text-align:center;">🎰 Calculadora de Apostas Elegíveis</h1>
 
-    <p style='text-align:center; font-size:16px; color:#555;'>
+    <p style="text-align:center; font-size:16px; color:#b0b0b0;">
     Para garantir que o jogo está elegível e que o código não foi alterado ou quebrado,
     valide sempre na aba oficial de promoções:
     <br><br>
     <a href="https://start.bet.br/promotions/1976" target="_blank"
-       style="color:#1f77b4; font-weight:bold;">
+       style="color:#4da3ff; font-weight:bold;">
        👉 Promoções – Jogos Elegíveis (StartBet)
     </a>
     </p>
@@ -30,7 +33,7 @@ st.markdown(
 st.divider()
 
 # =========================
-# Jogos elegíveis
+# Lista de jogos elegíveis
 # =========================
 JOGOS_ELEGIVEIS = [
     "Fortune Tiger","Fortune Ox","Fortune Mouse","Fortune Rabbit","Tigre Sortudo",
@@ -61,6 +64,7 @@ uploaded_file = st.file_uploader(
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
+    # Conversões e limpeza
     df["Creation Date"] = pd.to_datetime(df["Creation Date"], errors="coerce")
     df["Bet"] = pd.to_numeric(df["Bet"], errors="coerce").fillna(0)
 
@@ -100,13 +104,13 @@ if uploaded_file:
     st.divider()
 
     # =========================
-    # Cliente
+    # Cliente(s)
     # =========================
     st.subheader("👤 Cliente(s)")
     st.info(", ".join(df_filtered["Client"].astype(str).unique()))
 
     # =========================
-    # Separação
+    # Separação elegíveis / não elegíveis
     # =========================
     df_elegiveis = df_filtered[df_filtered["Game Name"].isin(JOGOS_ELEGIVEIS)]
     df_nao_elegiveis = df_filtered[~df_filtered["Game Name"].isin(JOGOS_ELEGIVEIS)]
@@ -116,7 +120,7 @@ if uploaded_file:
     total_geral = total_elegiveis + total_nao_elegiveis
 
     # =========================
-    # Cards customizados (cores)
+    # Cards de resumo (tema-safe)
     # =========================
     st.subheader("💵 Resumo Financeiro")
 
@@ -125,9 +129,9 @@ if uploaded_file:
     with colA:
         st.markdown(
             f"""
-            <div style="padding:20px; border-radius:12px; background:#f5f5f5; text-align:center;">
-                <h4>Total Geral Apostado</h4>
-                <h2>R$ {total_geral:,.2f}</h2>
+            <div style="padding:22px; border-radius:14px; background:#1565c0; text-align:center;">
+                <h4 style="color:white;">Total Geral Apostado</h4>
+                <h2 style="color:white;">R$ {total_geral:,.2f}</h2>
             </div>
             """,
             unsafe_allow_html=True
@@ -136,9 +140,9 @@ if uploaded_file:
     with colB:
         st.markdown(
             f"""
-            <div style="padding:20px; border-radius:12px; background:#e8f5e9; text-align:center;">
-                <h4 style="color:#2e7d32;">Jogos Elegíveis</h4>
-                <h2 style="color:#2e7d32;">R$ {total_elegiveis:,.2f}</h2>
+            <div style="padding:22px; border-radius:14px; background:#2e7d32; text-align:center;">
+                <h4 style="color:white;">Jogos Elegíveis</h4>
+                <h2 style="color:white;">R$ {total_elegiveis:,.2f}</h2>
             </div>
             """,
             unsafe_allow_html=True
@@ -147,9 +151,9 @@ if uploaded_file:
     with colC:
         st.markdown(
             f"""
-            <div style="padding:20px; border-radius:12px; background:#fdecea; text-align:center;">
-                <h4 style="color:#c62828;">Jogos Não Elegíveis</h4>
-                <h2 style="color:#c62828;">R$ {total_nao_elegiveis:,.2f}</h2>
+            <div style="padding:22px; border-radius:14px; background:#c62828; text-align:center;">
+                <h4 style="color:white;">Jogos Não Elegíveis</h4>
+                <h2 style="color:white;">R$ {total_nao_elegiveis:,.2f}</h2>
             </div>
             """,
             unsafe_allow_html=True
@@ -158,7 +162,7 @@ if uploaded_file:
     st.divider()
 
     # =========================
-    # Jogos Elegíveis
+    # Tabela - Jogos Elegíveis
     # =========================
     st.subheader("🎮 Valor Apostado por Jogo Elegível")
 
@@ -175,7 +179,7 @@ if uploaded_file:
     st.divider()
 
     # =========================
-    # Jogos Não Elegíveis
+    # Tabela - Jogos Não Elegíveis
     # =========================
     st.subheader("🚫 Jogos Não Elegíveis")
 
