@@ -64,7 +64,7 @@ uploaded_file = st.file_uploader(
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    # Conversões e limpeza
+    # Conversões
     df["Creation Date"] = pd.to_datetime(df["Creation Date"], errors="coerce")
     df["Bet"] = pd.to_numeric(df["Bet"], errors="coerce").fillna(0)
 
@@ -110,7 +110,7 @@ if uploaded_file:
     st.info(", ".join(df_filtered["Client"].astype(str).unique()))
 
     # =========================
-    # Separação elegíveis / não elegíveis
+    # Separação
     # =========================
     df_elegiveis = df_filtered[df_filtered["Game Name"].isin(JOGOS_ELEGIVEIS)]
     df_nao_elegiveis = df_filtered[~df_filtered["Game Name"].isin(JOGOS_ELEGIVEIS)]
@@ -120,7 +120,7 @@ if uploaded_file:
     total_geral = total_elegiveis + total_nao_elegiveis
 
     # =========================
-    # Cards de resumo (tema-safe)
+    # Cards resumo
     # =========================
     st.subheader("💵 Resumo Financeiro")
 
@@ -162,33 +162,40 @@ if uploaded_file:
     st.divider()
 
     # =========================
-    # Tabela - Jogos Elegíveis
+    # Função para gerar tabela com horários
     # =========================
-    st.subheader("🎮 Valor Apostado por Jogo Elegível")
+    def gerar_tabela(df_base):
+        tabela = (
+            df_base
+            .groupby("Game Name")
+            .agg(
+                Total_Apostado=("Bet", "sum"),
+                Primeira_Aposta=("Creation Date", "min"),
+                Ultima_Aposta=("Creation Date", "max")
+            )
+            .reset_index()
+            .sort_values(by="Total_Apostado", ascending=False)
+        )
 
-    tabela_elegiveis = (
-        df_elegiveis
-        .groupby("Game Name")["Bet"]
-        .sum()
-        .reset_index()
-        .sort_values(by="Bet", ascending=False)
-    )
+        tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+        tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
 
+        return tabela
+
+    # =========================
+    # Jogos Elegíveis
+    # =========================
+    st.subheader("🎮 Jogos Elegíveis")
+
+    tabela_elegiveis = gerar_tabela(df_elegiveis)
     st.dataframe(tabela_elegiveis, use_container_width=True)
 
     st.divider()
 
     # =========================
-    # Tabela - Jogos Não Elegíveis
+    # Jogos Não Elegíveis
     # =========================
     st.subheader("🚫 Jogos Não Elegíveis")
 
-    tabela_nao_elegiveis = (
-        df_nao_elegiveis
-        .groupby("Game Name")["Bet"]
-        .sum()
-        .reset_index()
-        .sort_values(by="Bet", ascending=False)
-    )
-
+    tabela_nao_elegiveis = gerar_tabela(df_nao_elegiveis)
     st.dataframe(tabela_nao_elegiveis, use_container_width=True)
