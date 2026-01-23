@@ -37,17 +37,24 @@ JOGOS_ELEGIVEIS = [
 # =========================
 # Título e descrição
 # =========================
-st.title("🎰 Calculadora de Valor Apostado – Jogos Elegíveis")
-
 st.markdown(
     """
-    **Importante:**  
-    Para confirmar se um jogo está elegível e garantir que o código não foi alterado,
-    consulte sempre a lista oficial:
-
-    👉 https://start.bet.br/promotions/1976
-    """
+    <div style="text-align:center;">
+        <h1>🎰 Calculadora de Valor Apostado – Jogos Elegíveis</h1>
+        <p style="font-size:16px;">
+            <strong>Importante:</strong><br>
+            Para confirmar se um jogo está elegível e garantir que o código não foi alterado,
+            consulte sempre a lista oficial:
+            <br><br>
+            👉 <a href="https://start.bet.br/promotions/1976" target="_blank">
+            https://start.bet.br/promotions/1976
+            </a>
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
+
 
 # =========================
 # Upload do CSV
