@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, time
 
 # =========================
 # Configuração da página
@@ -56,22 +56,18 @@ JOGOS_ELEGIVEIS = [
 # =========================
 # Upload CSV
 # =========================
-uploaded_file = st.file_uploader(
-    "📤 Faça upload do arquivo CSV",
-    type=["csv"]
-)
+uploaded_file = st.file_uploader("📤 Faça upload do arquivo CSV", type=["csv"])
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    # Conversões
     df["Creation Date"] = pd.to_datetime(df["Creation Date"], errors="coerce")
     df["Bet"] = pd.to_numeric(df["Bet"], errors="coerce").fillna(0)
 
     st.divider()
 
     # =========================
-    # Filtro de Data e Hora
+    # Filtro de Data e Hora (FIXO)
     # =========================
     st.subheader("⏰ Filtro de Data e Hora")
 
@@ -81,25 +77,21 @@ if uploaded_file:
         start_date = st.date_input("📅 Data inicial")
 
     with col2:
-        start_time = st.text_input("⌨️ Hora inicial (HH:MM)", value="00:00")
+        start_time = st.time_input("⏱️ Hora inicial", value=time(0, 0))
 
     with col3:
         end_date = st.date_input("📅 Data final")
 
     with col4:
-        end_time = st.text_input("⌨️ Hora final (HH:MM)", value="23:59")
+        end_time = st.time_input("⏱️ Hora final", value=time(23, 59))
 
-    try:
-        start_dt = datetime.strptime(f"{start_date} {start_time}", "%Y-%m-%d %H:%M")
-        end_dt = datetime.strptime(f"{end_date} {end_time}", "%Y-%m-%d %H:%M")
+    start_dt = datetime.combine(start_date, start_time)
+    end_dt = datetime.combine(end_date, end_time)
 
-        df_filtered = df[
-            (df["Creation Date"] >= start_dt) &
-            (df["Creation Date"] <= end_dt)
-        ]
-    except ValueError:
-        st.error("⚠️ Horário inválido. Use HH:MM (ex: 14:30)")
-        st.stop()
+    df_filtered = df[
+        (df["Creation Date"] >= start_dt) &
+        (df["Creation Date"] <= end_dt)
+    ]
 
     st.divider()
 
@@ -162,7 +154,7 @@ if uploaded_file:
     st.divider()
 
     # =========================
-    # Função para gerar tabela com horários
+    # Função tabela com horários
     # =========================
     def gerar_tabela(df_base):
         tabela = (
@@ -186,9 +178,7 @@ if uploaded_file:
     # Jogos Elegíveis
     # =========================
     st.subheader("🎮 Jogos Elegíveis")
-
-    tabela_elegiveis = gerar_tabela(df_elegiveis)
-    st.dataframe(tabela_elegiveis, use_container_width=True)
+    st.dataframe(gerar_tabela(df_elegiveis), use_container_width=True)
 
     st.divider()
 
@@ -196,6 +186,4 @@ if uploaded_file:
     # Jogos Não Elegíveis
     # =========================
     st.subheader("🚫 Jogos Não Elegíveis")
-
-    tabela_nao_elegiveis = gerar_tabela(df_nao_elegiveis)
-    st.dataframe(tabela_nao_elegiveis, use_container_width=True)
+    st.dataframe(gerar_tabela(df_nao_elegiveis), use_container_width=True)
