@@ -14,7 +14,7 @@ st.markdown(
     """
     <h1 style='text-align:center;'>🎰 Calculadora de Apostas Elegíveis</h1>
     <p style='text-align:center;color:gray;'>
-    Análise de valores apostados por período e elegibilidade de jogos
+    Visualização clara de valores apostados por período
     </p>
     """,
     unsafe_allow_html=True
@@ -54,7 +54,6 @@ uploaded_file = st.file_uploader(
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    # Conversões
     df["Creation Date"] = pd.to_datetime(df["Creation Date"], errors="coerce")
     df["Bet"] = pd.to_numeric(df["Bet"], errors="coerce").fillna(0)
 
@@ -93,7 +92,7 @@ if uploaded_file:
         ]
 
     except ValueError:
-        st.error("⚠️ Formato de hora inválido. Use HH:MM (ex: 14:30)")
+        st.error("⚠️ Horário inválido. Use HH:MM (ex: 09:30)")
         st.stop()
 
     st.divider()
@@ -112,21 +111,30 @@ if uploaded_file:
 
     total_elegiveis = df_elegiveis["Bet"].sum()
     total_nao_elegiveis = df_nao_elegiveis["Bet"].sum()
+    total_geral = total_elegiveis + total_nao_elegiveis
 
     # =========================
     # Cards de valores
     # =========================
-    colA, colB = st.columns(2)
+    st.subheader("💵 Resumo Financeiro")
+
+    colA, colB, colC = st.columns(3)
 
     with colA:
         st.metric(
-            "💰 Total Apostado (Jogos Elegíveis)",
-            f"R$ {total_elegiveis:,.2f}"
+            "🟢 Total Geral Apostado",
+            f"R$ {total_geral:,.2f}"
         )
 
     with colB:
         st.metric(
-            "🚫 Total Apostado (Não Elegíveis)",
+            "🔵 Total Jogos Elegíveis",
+            f"R$ {total_elegiveis:,.2f}"
+        )
+
+    with colC:
+        st.metric(
+            "🔴 Total Jogos Não Elegíveis",
             f"R$ {total_nao_elegiveis:,.2f}"
         )
 
@@ -163,19 +171,3 @@ if uploaded_file:
     )
 
     st.dataframe(tabela_nao_elegiveis, use_container_width=True)
-
-    st.divider()
-
-    # =========================
-    # Exportar CSV
-    # =========================
-    st.subheader("📥 Exportar Dados Filtrados")
-
-    csv_export = df_filtered.to_csv(index=False).encode("utf-8")
-
-    st.download_button(
-        label="⬇️ Baixar CSV",
-        data=csv_export,
-        file_name="apostas_filtradas.csv",
-        mime="text/csv"
-    )
