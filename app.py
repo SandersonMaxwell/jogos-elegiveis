@@ -140,4 +140,40 @@ if arquivo:
         st.markdown(
             f"""
             <div style="padding:20px; border-radius:12px; background:#c62828; text-align:center;">
-                <h4 style="color:white;">Jogos Não Elegí
+                <h4 style="color:white;">Jogos Não Elegíveis</h4>
+                <h2 style="color:white;">R$ {total_nao_elegiveis:,.2f}</h2>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    # =========================
+    # Função de tabela
+    # =========================
+    def gerar_tabela(df_base):
+        tabela = (
+            df_base
+            .groupby("Game Name")
+            .agg(
+                Quantidade_Rodadas=("Bet", "count"),
+                Total_Apostado=("Bet", "sum"),
+                Primeira_Aposta=("Creation Date", "min"),
+                Ultima_Aposta=("Creation Date", "max")
+            )
+            .reset_index()
+            .sort_values(by="Total_Apostado", ascending=False)
+        )
+
+        tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+        tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+
+        return tabela
+
+    # =========================
+    # Tabelas
+    # =========================
+    st.subheader("🟢 Jogos Elegíveis")
+    st.dataframe(gerar_tabela(df_elegiveis), use_container_width=True)
+
+    st.subheader("🔴 Jogos Não Elegíveis")
+    st.dataframe(gerar_tabela(df_nao_elegiveis), use_container_width=True)
