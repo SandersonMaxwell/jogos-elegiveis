@@ -37,20 +37,20 @@ JOGOS_ELEGIVEIS = [
 # =========================
 # Título e descrição
 # =========================
-st.title("🎰 Calculadora de Valor Apostado - Jogos Elegíveis")
+st.title("🎰 Calculadora de Valor Apostado – Jogos Elegíveis")
 
 st.markdown(
     """
     **Importante:**  
     Para confirmar se um jogo está elegível e garantir que o código não foi alterado,
-    consulte sempre a lista oficial no link abaixo:
+    consulte sempre a lista oficial:
 
     👉 https://start.bet.br/promotions/1976
     """
 )
 
 # =========================
-# Upload do arquivo
+# Upload do CSV
 # =========================
 arquivo = st.file_uploader("📂 Envie o arquivo CSV", type=["csv"])
 
@@ -58,13 +58,22 @@ if arquivo:
     df = pd.read_csv(arquivo)
 
     # =========================
-    # Tratamento dos dados
+    # Validação de colunas
+    # =========================
+    colunas_necessarias = {"Game Name", "Bet", "Creation Date", "Client"}
+    if not colunas_necessarias.issubset(df.columns):
+        st.error("❌ O CSV não contém todas as colunas obrigatórias.")
+        st.stop()
+
+    # =========================
+    # Tratamento de dados
     # =========================
     df["Creation Date"] = pd.to_datetime(df["Creation Date"], errors="coerce")
     df["Bet"] = pd.to_numeric(df["Bet"], errors="coerce").fillna(0)
+    df = df.dropna(subset=["Creation Date"])
 
     # =========================
-    # Filtro por data e hora
+    # Filtro de data e hora
     # =========================
     st.subheader("⏰ Filtro de Data e Hora")
 
@@ -81,19 +90,32 @@ if arquivo:
     try:
         inicio = pd.to_datetime(f"{data_inicio} {hora_inicio}")
         fim = pd.to_datetime(f"{data_fim} {hora_fim}")
-
-        df = df[(df["Creation Date"] >= inicio) & (df["Creation Date"] <= fim)]
     except:
         st.error("❌ Formato de hora inválido. Use HH:MM")
+        st.stop()
+
+    df = df[(df["Creation Date"] >= inicio) & (df["Creation Date"] <= fim)]
+
+    # =========================
+    # Validação após filtro
+    # =========================
+    if df.empty:
+        st.warning("⚠️ Nenhuma aposta encontrada para o período selecionado.")
+        st.stop()
 
     # =========================
     # Cliente
     # =========================
-    cliente = df["Client"].iloc[0]
-    st.markdown(f"### 👤 Cliente: **{cliente}**")
+    clientes = df["Client"].unique()
+
+    if len(clientes) == 1:
+        st.markdown(f"### 👤 Cliente: **{clientes[0]}**")
+    else:
+        st.markdown("### 👤 Clientes encontrados:")
+        st.write(clientes)
 
     # =========================
-    # Separação elegíveis / não elegíveis
+    # Elegibilidade
     # =========================
     df["Elegivel"] = df["Game Name"].isin(JOGOS_ELEGIVEIS)
 
@@ -108,47 +130,34 @@ if arquivo:
     total_nao_elegiveis = df_nao_elegiveis["Bet"].sum()
 
     # =========================
-    # Cards (dark/light safe)
+    # Cards
     # =========================
     st.subheader("💵 Resumo Financeiro")
 
     colA, colB, colC = st.columns(3)
 
-    with colA:
+    def card(titulo, valor, cor):
         st.markdown(
             f"""
-            <div style="padding:20px; border-radius:12px; background:#1565c0; text-align:center;">
-                <h4 style="color:white;">Total Geral Apostado</h4>
-                <h2 style="color:white;">R$ {total_geral:,.2f}</h2>
+            <div style="padding:20px; border-radius:12px; background:{cor}; text-align:center;">
+                <h4 style="color:white;">{titulo}</h4>
+                <h2 style="color:white;">R$ {valor:,.2f}</h2>
             </div>
             """,
             unsafe_allow_html=True
         )
+
+    with colA:
+        card("Total Geral Apostado", total_geral, "#1565c0")
 
     with colB:
-        st.markdown(
-            f"""
-            <div style="padding:20px; border-radius:12px; background:#2e7d32; text-align:center;">
-                <h4 style="color:white;">Jogos Elegíveis</h4>
-                <h2 style="color:white;">R$ {total_elegiveis:,.2f}</h2>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        card("Jogos Elegíveis", total_elegiveis, "#2e7d32")
 
     with colC:
-        st.markdown(
-            f"""
-            <div style="padding:20px; border-radius:12px; background:#c62828; text-align:center;">
-                <h4 style="color:white;">Jogos Não Elegíveis</h4>
-                <h2 style="color:white;">R$ {total_nao_elegiveis:,.2f}</h2>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        card("Jogos Não Elegíveis", total_nao_elegiveis, "#c62828")
 
     # =========================
-    # Função de tabela
+    # Função tabela
     # =========================
     def gerar_tabela(df_base):
         tabela = (
