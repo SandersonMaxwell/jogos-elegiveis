@@ -34,6 +34,9 @@ JOGOS_ELEGIVEIS = [
     "Big Bass Bonanza", "Big Bass Splash", "Big Bass Christmas Bash"
 ]
 
+# 🔹 Lista normalizada (minúsculo + strip)
+JOGOS_ELEGIVEIS_NORMALIZADOS = [jogo.lower().strip() for jogo in JOGOS_ELEGIVEIS]
+
 # =========================
 # Título e descrição
 # =========================
@@ -54,7 +57,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
 
 # =========================
 # Upload do CSV
@@ -78,6 +80,9 @@ if arquivo:
     df["Creation Date"] = pd.to_datetime(df["Creation Date"], errors="coerce")
     df["Bet"] = pd.to_numeric(df["Bet"], errors="coerce").fillna(0)
     df = df.dropna(subset=["Creation Date"])
+
+    # 🔹 Normalização do nome do jogo
+    df["Game Name Normalizado"] = df["Game Name"].str.lower().str.strip()
 
     # =========================
     # Filtro de data e hora
@@ -103,9 +108,6 @@ if arquivo:
 
     df = df[(df["Creation Date"] >= inicio) & (df["Creation Date"] <= fim)]
 
-    # =========================
-    # Validação após filtro
-    # =========================
     if df.empty:
         st.warning("⚠️ Nenhuma aposta encontrada para o período selecionado.")
         st.stop()
@@ -122,9 +124,9 @@ if arquivo:
         st.write(clientes)
 
     # =========================
-    # Elegibilidade
+    # Elegibilidade (NORMALIZADA)
     # =========================
-    df["Elegivel"] = df["Game Name"].isin(JOGOS_ELEGIVEIS)
+    df["Elegivel"] = df["Game Name Normalizado"].isin(JOGOS_ELEGIVEIS_NORMALIZADOS)
 
     df_elegiveis = df[df["Elegivel"]]
     df_nao_elegiveis = df[~df["Elegivel"]]
