@@ -14,7 +14,7 @@ st.set_page_config(
 # =========================
 JOGOS_ELEGIVEIS = [
     "Fortune Tiger", "Fortune Ox", "Fortune Mouse", "Fortune Rabbit",
-    "Tigre Sortudo", "Tigrinho Sortudo 1000", "Macaco Sortudo",
+    "Tigre Sortudo", "Tigre Sortudo 1000", "Macaco Sortudo",
     "Ratinho Sortudo", "Touro Sortudo", "Cachorro Sortudo",
     "Wild Bounty Showdown", "Dragon Hatch", "Dragon Hatch 2",
     "Midas Fortune", "The Great Icescape", "Wild Bandito",
