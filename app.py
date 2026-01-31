@@ -29,8 +29,8 @@ JOGOS_ELEGIVEIS = [
     "Yakuza Honor", "Mystic Potion", "Wings Of Iguazu",
     "Three Crazy Piggies", "Rio Fantasia", "Chocolate Deluxe",
     "Graffiti Rush", "Dreams Of Macau", "Sweet Bonanza",
-    "Sweet Bonanza Xmas", "Gates Of Olympus",
-    "Gates Of Olympus 1000", "Gates Of Olympus Xmas 1000",
+    "Sweet Bonanza Xmas", "Gates of Olympus",
+    "Gates of Olympus 1000", "Gates of Olympus Xmas 1000",
     "Big Bass Bonanza", "Big Bass Splash", "Big Bass Christmas Bash"
 ]
 
