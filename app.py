@@ -77,7 +77,11 @@ if arquivo:
     # =========================
     # Tratamento de dados
     # =========================
-    df["Creation Date"] = pd.to_datetime(df["Creation Date"], errors="coerce")
+    df["Creation Date"] = pd.to_datetime(
+    df["Creation Date"],
+    dayfirst=True,
+    errors="coerce"
+)
     df["Bet"] = pd.to_numeric(df["Bet"], errors="coerce").fillna(0)
     df = df.dropna(subset=["Creation Date"])
 
