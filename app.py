@@ -195,7 +195,7 @@ if arquivo:
         else:
             jogos_texto = "\n".join(
                 [
-                    f"{row['Game Name']} ({'🟢 Elegível' if row['Elegivel'] else '🔴 Não elegível'}): {formatar_brl(row['Bet'])}"
+                    f"{row['Game Name']} ({'Elegível' if row['Elegivel'] else 'Não elegível'}): {formatar_brl(row['Bet'])}"
                     for _, row in jogos_lista.iterrows()
                 ]
             )
