@@ -2,12 +2,9 @@ import streamlit as st
 import pandas as pd
 
 # =========================
-# Configuração da página
+# Configuração
 # =========================
-st.set_page_config(
-    page_title="Calculadora de Apostas Elegíveis",
-    layout="wide"
-)
+st.set_page_config(page_title="Calculadora de Apostas", layout="wide")
 
 # =========================
 # Jogos elegíveis
@@ -38,12 +35,15 @@ JOGOS_ELEGIVEIS = [
 JOGOS_ELEGIVEIS_NORMALIZADOS = [j.lower().strip() for j in JOGOS_ELEGIVEIS]
 
 # =========================
+# Funções auxiliares
+# =========================
+def formatar_brl(valor):
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+# =========================
 # Título
 # =========================
-st.markdown(
-    "<h1 style='text-align:center;'>🎰 Calculadora de Apostas Elegíveis</h1>",
-    unsafe_allow_html=True
-)
+st.title("🎰 Calculadora de Apostas Elegíveis")
 
 # =========================
 # Upload
@@ -53,28 +53,19 @@ arquivo = st.file_uploader("📂 Envie o CSV", type=["csv"])
 if arquivo:
     df = pd.read_csv(arquivo)
 
-    # =========================
     # Validação
-    # =========================
-    colunas = {"Game Name", "Bet", "Creation Date", "Client"}
-    if not colunas.issubset(df.columns):
-        st.error("❌ CSV inválido")
+    if not {"Game Name", "Bet", "Creation Date", "Client"}.issubset(df.columns):
+        st.error("CSV inválido")
         st.stop()
 
-    # =========================
     # Tratamento
-    # =========================
     df["Creation Date"] = pd.to_datetime(df["Creation Date"], dayfirst=True, errors="coerce")
     df["Bet"] = pd.to_numeric(df["Bet"], errors="coerce").fillna(0)
     df = df.dropna(subset=["Creation Date"])
-
     df["Game Name Normalizado"] = df["Game Name"].str.lower().str.strip()
 
-    # =========================
     # Filtro
-    # =========================
     st.subheader("⏰ Filtro")
-
     col1, col2 = st.columns(2)
 
     with col1:
@@ -91,104 +82,58 @@ if arquivo:
     df = df[(df["Creation Date"] >= inicio) & (df["Creation Date"] <= fim)]
 
     if df.empty:
-        st.warning("⚠️ Nenhum dado encontrado.")
+        st.warning("Nenhum dado encontrado")
         st.stop()
 
-    # =========================
     # Cliente
-    # =========================
     clientes = df["Client"].unique()
+    cliente_nome = clientes[0] if len(clientes) == 1 else "Jogador"
+    st.markdown(f"### 👤 Cliente: **{cliente_nome}**")
 
-    if len(clientes) == 1:
-        st.markdown(f"### 👤 Cliente: **{clientes[0]}**")
-    else:
-        st.write(clientes)
-
-    # =========================
     # Elegibilidade
-    # =========================
     df["Elegivel"] = df["Game Name Normalizado"].isin(JOGOS_ELEGIVEIS_NORMALIZADOS)
 
     df_elegiveis = df[df["Elegivel"]]
     df_nao_elegiveis = df[~df["Elegivel"]]
 
-    # =========================
     # Totais
-    # =========================
     total_geral = df["Bet"].sum()
     total_elegiveis = df_elegiveis["Bet"].sum()
     total_nao_elegiveis = df_nao_elegiveis["Bet"].sum()
 
-    percentual_elegivel = (total_elegiveis / total_geral * 100) if total_geral > 0 else 0
-
-    # =========================
-    # Função formatar
-    # =========================
-    def formatar_brl(valor):
-        return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-    # =========================
     # Cards
-    # =========================
     st.subheader("💵 Resumo")
-
-    colA, colB, colC, colD = st.columns(4)
-
-    def card(titulo, valor, cor):
-        st.markdown(f"""
-        <div style="padding:20px; border-radius:12px; background:{cor}; text-align:center;">
-            <h4 style="color:white;">{titulo}</h4>
-            <h2 style="color:white;">{formatar_brl(valor)}</h2>
-        </div>
-        """, unsafe_allow_html=True)
+    colA, colB, colC = st.columns(3)
 
     with colA:
-        card("Total Geral", total_geral, "#1565c0")
-
+        st.metric("Total Geral", formatar_brl(total_geral))
     with colB:
-        card("Elegíveis", total_elegiveis, "#2e7d32")
-
+        st.metric("Elegíveis", formatar_brl(total_elegiveis))
     with colC:
-        card("Não Elegíveis", total_nao_elegiveis, "#c62828")
-
-    with colD:
-        st.markdown(f"""
-        <div style="padding:20px; border-radius:12px; background:#6a1b9a; text-align:center;">
-            <h4 style="color:white;">% Elegível</h4>
-            <h2 style="color:white;">{percentual_elegivel:.2f}%</h2>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("Não Elegíveis", formatar_brl(total_nao_elegiveis))
 
     # =========================
-    # Tabela
+    # Tabelas
     # =========================
     def gerar_tabela(df_base):
         tabela = (
             df_base
             .groupby("Game Name")
             .agg(
-                Quantidade_Rodadas=("Bet", "count"),
-                Total_Apostado=("Bet", "sum"),
-                Primeira_Aposta=("Creation Date", "min"),
-                Ultima_Aposta=("Creation Date", "max")
+                Rodadas=("Bet", "count"),
+                Total=("Bet", "sum")
             )
             .reset_index()
-            .sort_values(by="Total_Apostado", ascending=False)
+            .sort_values(by="Total", ascending=False)
         )
 
-        tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
-        tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
-
         tabela["Resumo"] = tabela.apply(
-            lambda row: f"{formatar_brl(row['Total_Apostado'])} ({row['Quantidade_Rodadas']} rodadas)",
+            lambda row: f"{formatar_brl(row['Total'])} ({row['Rodadas']} rodadas)",
             axis=1
         )
 
-        return tabela[["Game Name", "Resumo", "Primeira_Aposta", "Ultima_Aposta"]]
+        return tabela[["Game Name", "Resumo"]]
 
-    # =========================
-    # Exibição
-    # =========================
     st.subheader("🟢 Jogos Elegíveis")
     st.dataframe(gerar_tabela(df_elegiveis), use_container_width=True)
 
@@ -208,24 +153,26 @@ if arquivo:
 
     if valor_necessario > 0:
 
-        cliente_nome = clientes[0] if len(clientes) == 1 else "Jogador"
+        faltante = max(0, valor_necessario - total_elegiveis)
 
-   jogos_lista = (
-    df
-    .groupby(["Game Name", "Elegivel"])["Bet"]
-    .sum()
-    .reset_index()
-    .sort_values(by="Bet", ascending=False)
-)
+        # TODOS os jogos (com elegibilidade)
+        jogos_lista = (
+            df
+            .groupby(["Game Name", "Elegivel"])["Bet"]
+            .sum()
+            .reset_index()
+            .sort_values(by="Bet", ascending=False)
+        )
 
         if jogos_lista.empty:
-            jogos_texto = "Nenhum jogo elegível apostado"
+            jogos_texto = "Nenhum jogo apostado"
         else:
             jogos_texto = "\n".join(
-            [f"{jogo}: {formatar_brl(valor)}" for jogo, valor in jogos_lista.items()]
-    )
-
-        faltante = max(0, valor_necessario - total_elegiveis)
+                [
+                    f"{row['Game Name']} ({'🟢 Elegível' if row['Elegivel'] else '🔴 Não elegível'}): {formatar_brl(row['Bet'])}"
+                    for _, row in jogos_lista.iterrows()
+                ]
+            )
 
         if total_elegiveis >= valor_necessario:
             mensagem = f"""Jogador {cliente_nome} apostou o valor necessário para cumprir missão
