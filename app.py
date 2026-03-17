@@ -13,7 +13,7 @@ st.set_page_config(
 # Jogos elegíveis
 # =========================
 JOGOS_ELEGIVEIS = [
-    "Fortune Tiger", "Fortune Ox", "Fortune Mouse", "Fortune Rabbit",
+    "Fortune Tiger", "Fortune Dragon", "Fortune Ox", "Fortune Mouse", "Fortune Rabbit",
     "Tigre Sortudo", "Tigre Sortudo 1000", "Macaco Sortudo",
     "Ratinho Sortudo", "Touro Sortudo", "Cachorro Sortudo",
     "Wild Bounty Showdown", "Dragon Hatch", "Dragon Hatch 2",
@@ -173,24 +173,38 @@ if arquivo:
     # Função tabela
     # =========================
     def gerar_tabela(df_base):
-        tabela = (
-            df_base
-            .groupby("Game Name")
-            .agg(
-                Quantidade_Rodadas=("Bet", "count"),
-                Total_Apostado=("Bet", "sum"),
-                Primeira_Aposta=("Creation Date", "min"),
-                Ultima_Aposta=("Creation Date", "max")
-            )
-            .reset_index()
-            .sort_values(by="Total_Apostado", ascending=False)
+    tabela = (
+        df_base
+        .groupby("Game Name")
+        .agg(
+            Quantidade_Rodadas=("Bet", "count"),
+            Total_Apostado=("Bet", "sum"),
+            Primeira_Aposta=("Creation Date", "min"),
+            Ultima_Aposta=("Creation Date", "max")
         )
+        .reset_index()
+        .sort_values(by="Total_Apostado", ascending=False)
+    )
 
-        tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
-        tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+    # Formatação de datas
+    tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+    tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
 
-        return tabela
+    # 💰 Formatar valor + rodadas
+    tabela["Resumo"] = tabela.apply(
+        lambda row: f"R$ {row['Total_Apostado']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") ({row['Quantidade_Rodadas']} rodadas)",
+        axis=1
+    )
 
+    # 🔥 Manter só as colunas que importam
+    tabela = tabela[[
+        "Game Name",
+        "Resumo",
+        "Primeira_Aposta",
+        "Ultima_Aposta"
+    ]]
+
+    return tabela
     # =========================
     # Tabelas
     # =========================
