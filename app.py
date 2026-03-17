@@ -115,24 +115,36 @@ if arquivo:
     # =========================
     # Tabelas
     # =========================
-    def gerar_tabela(df_base):
-        tabela = (
-            df_base
-            .groupby("Game Name")
-            .agg(
-                Rodadas=("Bet", "count"),
-                Total=("Bet", "sum")
-            )
-            .reset_index()
-            .sort_values(by="Total", ascending=False)
+   def gerar_tabela(df_base):
+    tabela = (
+        df_base
+        .groupby("Game Name")
+        .agg(
+            Rodadas=("Bet", "count"),
+            Total=("Bet", "sum"),
+            Primeira_Aposta=("Creation Date", "min"),
+            Ultima_Aposta=("Creation Date", "max")
         )
+        .reset_index()
+        .sort_values(by="Total", ascending=False)
+    )
 
-        tabela["Resumo"] = tabela.apply(
-            lambda row: f"{formatar_brl(row['Total'])} ({row['Rodadas']} rodadas)",
-            axis=1
-        )
+    # Formatar datas
+    tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+    tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
 
-        return tabela[["Game Name", "Resumo"]]
+    # Resumo
+    tabela["Resumo"] = tabela.apply(
+        lambda row: f"{formatar_brl(row['Total'])} ({row['Rodadas']} rodadas)",
+        axis=1
+    )
+
+    return tabela[[
+        "Game Name",
+        "Resumo",
+        "Primeira_Aposta",
+        "Ultima_Aposta"
+    ]]
 
     st.subheader("🟢 Jogos Elegíveis")
     st.dataframe(gerar_tabela(df_elegiveis), use_container_width=True)
