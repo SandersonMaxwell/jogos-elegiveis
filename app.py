@@ -210,14 +210,13 @@ if arquivo:
 
         cliente_nome = clientes[0] if len(clientes) == 1 else "Jogador"
 
-       jogos_lista = (
+    jogos_lista = (
         df
         .groupby(["Game Name", "Elegivel"])["Bet"]
         .sum()
         .reset_index()
         .sort_values(by="Bet", ascending=False)
-
-        )
+    )    
 
         if jogos_lista.empty:
             jogos_texto = "Nenhum jogo elegível apostado"
