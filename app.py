@@ -191,7 +191,7 @@ if arquivo:
             axis=1
         )
 
-        tabela["Resumo"] = tabela["Resumo"].str.replace(",", "X").str.replace(".", ",").str.replace("X", ".")
+        tabela["Resumo"] = tabela["Resumo"].astype(str).str.replace(",", "X").str.replace(".", ",").str.replace("X", ".")
 
         tabela = tabela[[
             "Game Name",
