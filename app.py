@@ -10,7 +10,7 @@ st.set_page_config(
 )
 
 # =========================
-# Jogos elegíveis (ATUALIZADO)
+# Jogos elegíveis
 # =========================
 JOGOS_ELEGIVEIS = [
     "Fortune Tiger", "Fortune Ox", "Fortune Mouse", "Fortune Rabbit",
@@ -35,25 +35,20 @@ JOGOS_ELEGIVEIS = [
     "Fortune Dragon"
 ]
 
-# Normalização
-JOGOS_ELEGIVEIS_NORMALIZADOS = [jogo.lower().strip() for jogo in JOGOS_ELEGIVEIS]
+JOGOS_ELEGIVEIS_NORMALIZADOS = [j.lower().strip() for j in JOGOS_ELEGIVEIS]
 
 # =========================
 # Título
 # =========================
 st.markdown(
-    """
-    <div style="text-align:center;">
-        <h1>🎰 Calculadora de Valor Apostado – Jogos Elegíveis</h1>
-    </div>
-    """,
+    "<h1 style='text-align:center;'>🎰 Calculadora de Apostas Elegíveis</h1>",
     unsafe_allow_html=True
 )
 
 # =========================
 # Upload
 # =========================
-arquivo = st.file_uploader("📂 Envie o arquivo CSV", type=["csv"])
+arquivo = st.file_uploader("📂 Envie o CSV", type=["csv"])
 
 if arquivo:
     df = pd.read_csv(arquivo)
@@ -61,9 +56,9 @@ if arquivo:
     # =========================
     # Validação
     # =========================
-    colunas_necessarias = {"Game Name", "Bet", "Creation Date", "Client"}
-    if not colunas_necessarias.issubset(df.columns):
-        st.error("❌ CSV inválido.")
+    colunas = {"Game Name", "Bet", "Creation Date", "Client"}
+    if not colunas.issubset(df.columns):
+        st.error("❌ CSV inválido")
         st.stop()
 
     # =========================
@@ -127,6 +122,12 @@ if arquivo:
     percentual_elegivel = (total_elegiveis / total_geral * 100) if total_geral > 0 else 0
 
     # =========================
+    # Função formatar
+    # =========================
+    def formatar_brl(valor):
+        return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    # =========================
     # Cards
     # =========================
     st.subheader("💵 Resumo")
@@ -134,11 +135,10 @@ if arquivo:
     colA, colB, colC, colD = st.columns(4)
 
     def card(titulo, valor, cor):
-        valor_formatado = f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         st.markdown(f"""
         <div style="padding:20px; border-radius:12px; background:{cor}; text-align:center;">
             <h4 style="color:white;">{titulo}</h4>
-            <h2 style="color:white;">{valor_formatado}</h2>
+            <h2 style="color:white;">{formatar_brl(valor)}</h2>
         </div>
         """, unsafe_allow_html=True)
 
@@ -160,13 +160,7 @@ if arquivo:
         """, unsafe_allow_html=True)
 
     # =========================
-    # ALERTA
-    # =========================
-    if percentual_elegivel < 30:
-        st.warning("⚠️ Baixo percentual de jogos elegíveis.")
-
-    # =========================
-    # Tabela formatada
+    # Tabela
     # =========================
     def gerar_tabela(df_base):
         tabela = (
@@ -185,22 +179,12 @@ if arquivo:
         tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
         tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
 
-        # 💰 Resumo formatado
         tabela["Resumo"] = tabela.apply(
-            lambda row: f"R$ {row['Total_Apostado']:,.2f} ({row['Quantidade_Rodadas']} rodadas)",
+            lambda row: f"{formatar_brl(row['Total_Apostado'])} ({row['Quantidade_Rodadas']} rodadas)",
             axis=1
         )
 
-        tabela["Resumo"] = tabela["Resumo"].astype(str).str.replace(",", "X").str.replace(".", ",").str.replace("X", ".")
-
-        tabela = tabela[[
-            "Game Name",
-            "Resumo",
-            "Primeira_Aposta",
-            "Ultima_Aposta"
-        ]]
-
-        return tabela
+        return tabela[["Game Name", "Resumo", "Primeira_Aposta", "Ultima_Aposta"]]
 
     # =========================
     # Exibição
@@ -212,11 +196,46 @@ if arquivo:
     st.dataframe(gerar_tabela(df_nao_elegiveis), use_container_width=True)
 
     # =========================
-    # Download
+    # RELATÓRIO FINAL
     # =========================
-    st.download_button(
-        "📥 Baixar Jogos Elegíveis",
-        gerar_tabela(df_elegiveis).to_csv(index=False),
-        "jogos_elegiveis.csv",
-        "text/csv"
+    st.subheader("📋 Relatório Final")
+
+    valor_necessario = st.number_input(
+        "💰 Valor necessário para cumprir missão",
+        min_value=0.0,
+        step=10.0
     )
+
+    if valor_necessario > 0:
+
+        cliente_nome = clientes[0] if len(clientes) == 1 else "Jogador"
+
+        jogos_lista = (
+            df_elegiveis
+            .groupby("Game Name")["Bet"]
+            .sum()
+            .sort_values(ascending=False)
+        )
+
+        jogos_texto = "\n".join(
+            [f"{jogo}: {formatar_brl(valor)}" for jogo, valor in jogos_lista.items()]
+        )
+
+        faltante = max(0, valor_necessario - total_elegiveis)
+
+        if total_elegiveis >= valor_necessario:
+            mensagem = f"""Jogador {cliente_nome} apostou o valor necessário para cumprir missão
+
+Jogos apostados e valor:
+{jogos_texto}
+"""
+        else:
+            mensagem = f"""Jogador {cliente_nome} não apostou valor necessário para cumprir missão
+
+Faltante: {formatar_brl(faltante)}
+
+Jogos apostados e valor:
+{jogos_texto}
+"""
+
+        st.text_area("📄 Mensagem pronta", mensagem, height=300)
