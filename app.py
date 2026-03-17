@@ -64,8 +64,11 @@ if arquivo:
     df = df.dropna(subset=["Creation Date"])
     df["Game Name Normalizado"] = df["Game Name"].str.lower().str.strip()
 
+    # =========================
     # Filtro
+    # =========================
     st.subheader("⏰ Filtro")
+
     col1, col2 = st.columns(2)
 
     with col1:
@@ -85,67 +88,79 @@ if arquivo:
         st.warning("Nenhum dado encontrado")
         st.stop()
 
+    # =========================
     # Cliente
+    # =========================
     clientes = df["Client"].unique()
     cliente_nome = clientes[0] if len(clientes) == 1 else "Jogador"
     st.markdown(f"### 👤 Cliente: **{cliente_nome}**")
 
+    # =========================
     # Elegibilidade
+    # =========================
     df["Elegivel"] = df["Game Name Normalizado"].isin(JOGOS_ELEGIVEIS_NORMALIZADOS)
 
     df_elegiveis = df[df["Elegivel"]]
     df_nao_elegiveis = df[~df["Elegivel"]]
 
+    # =========================
     # Totais
+    # =========================
     total_geral = df["Bet"].sum()
     total_elegiveis = df_elegiveis["Bet"].sum()
     total_nao_elegiveis = df_nao_elegiveis["Bet"].sum()
 
+    # =========================
     # Cards
+    # =========================
     st.subheader("💵 Resumo")
+
     colA, colB, colC = st.columns(3)
 
     with colA:
         st.metric("Total Geral", formatar_brl(total_geral))
+
     with colB:
         st.metric("Elegíveis", formatar_brl(total_elegiveis))
+
     with colC:
         st.metric("Não Elegíveis", formatar_brl(total_nao_elegiveis))
 
     # =========================
-    # Tabelas
+    # Tabela com datas corrigida
     # =========================
-   def gerar_tabela(df_base):
-    tabela = (
-        df_base
-        .groupby("Game Name")
-        .agg(
-            Rodadas=("Bet", "count"),
-            Total=("Bet", "sum"),
-            Primeira_Aposta=("Creation Date", "min"),
-            Ultima_Aposta=("Creation Date", "max")
+    def gerar_tabela(df_base):
+        tabela = (
+            df_base
+            .groupby("Game Name")
+            .agg(
+                Rodadas=("Bet", "count"),
+                Total=("Bet", "sum"),
+                Primeira_Aposta=("Creation Date", "min"),
+                Ultima_Aposta=("Creation Date", "max")
+            )
+            .reset_index()
+            .sort_values(by="Total", ascending=False)
         )
-        .reset_index()
-        .sort_values(by="Total", ascending=False)
-    )
 
-    # Formatar datas
-    tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
-    tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+        tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+        tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
 
-    # Resumo
-    tabela["Resumo"] = tabela.apply(
-        lambda row: f"{formatar_brl(row['Total'])} ({row['Rodadas']} rodadas)",
-        axis=1
-    )
+        tabela["Resumo"] = tabela.apply(
+            lambda row: f"{formatar_brl(row['Total'])} ({row['Rodadas']} rodadas)",
+            axis=1
+        )
 
-    return tabela[[
-        "Game Name",
-        "Resumo",
-        "Primeira_Aposta",
-        "Ultima_Aposta"
-    ]]
+        return tabela[[
+            "Game Name",
+            "Resumo",
+            "Primeira_Aposta",
+            "Ultima_Aposta"
+        ]]
 
+    # =========================
+    # Exibição tabelas
+    # =========================
     st.subheader("🟢 Jogos Elegíveis")
     st.dataframe(gerar_tabela(df_elegiveis), use_container_width=True)
 
@@ -167,7 +182,6 @@ if arquivo:
 
         faltante = max(0, valor_necessario - total_elegiveis)
 
-        # TODOS os jogos (com elegibilidade)
         jogos_lista = (
             df
             .groupby(["Game Name", "Elegivel"])["Bet"]
