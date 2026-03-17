@@ -10,10 +10,10 @@ st.set_page_config(
 )
 
 # =========================
-# Jogos elegíveis
+# Jogos elegíveis (ATUALIZADO)
 # =========================
 JOGOS_ELEGIVEIS = [
-    "Fortune Tiger", "Fortune Dragon", "Fortune Ox", "Fortune Mouse", "Fortune Rabbit",
+    "Fortune Tiger", "Fortune Ox", "Fortune Mouse", "Fortune Rabbit",
     "Tigre Sortudo", "Tigre Sortudo 1000", "Macaco Sortudo",
     "Ratinho Sortudo", "Touro Sortudo", "Cachorro Sortudo",
     "Wild Bounty Showdown", "Dragon Hatch", "Dragon Hatch 2",
@@ -31,35 +31,27 @@ JOGOS_ELEGIVEIS = [
     "Graffiti Rush", "Dreams Of Macau", "Sweet Bonanza",
     "Sweet Bonanza Xmas", "Gates of Olympus",
     "Gates of Olympus 1000", "Gates of Olympus Xmas 1000",
-    "Big Bass Bonanza", "Big Bass Splash", "Big Bass Christmas Bash"
+    "Big Bass Bonanza", "Big Bass Splash", "Big Bass Christmas Bash",
+    "Fortune Dragon"
 ]
 
-# 🔹 Lista normalizada (minúsculo + strip)
+# Normalização
 JOGOS_ELEGIVEIS_NORMALIZADOS = [jogo.lower().strip() for jogo in JOGOS_ELEGIVEIS]
 
 # =========================
-# Título e descrição
+# Título
 # =========================
 st.markdown(
     """
     <div style="text-align:center;">
         <h1>🎰 Calculadora de Valor Apostado – Jogos Elegíveis</h1>
-        <p style="font-size:16px;">
-            <strong>Importante:</strong><br>
-            Para confirmar se um jogo está elegível e garantir que o código não foi alterado,
-            consulte sempre a lista oficial:
-            <br><br>
-            👉 <a href="https://start.bet.br/promotions/1976" target="_blank">
-            https://start.bet.br/promotions/1976
-            </a>
-        </p>
     </div>
     """,
     unsafe_allow_html=True
 )
 
 # =========================
-# Upload do CSV
+# Upload
 # =========================
 arquivo = st.file_uploader("📂 Envie o arquivo CSV", type=["csv"])
 
@@ -67,53 +59,44 @@ if arquivo:
     df = pd.read_csv(arquivo)
 
     # =========================
-    # Validação de colunas
+    # Validação
     # =========================
     colunas_necessarias = {"Game Name", "Bet", "Creation Date", "Client"}
     if not colunas_necessarias.issubset(df.columns):
-        st.error("❌ O CSV não contém todas as colunas obrigatórias.")
+        st.error("❌ CSV inválido.")
         st.stop()
 
     # =========================
-    # Tratamento de dados
+    # Tratamento
     # =========================
-    df["Creation Date"] = pd.to_datetime(
-    df["Creation Date"],
-    dayfirst=True,
-    errors="coerce"
-)
+    df["Creation Date"] = pd.to_datetime(df["Creation Date"], dayfirst=True, errors="coerce")
     df["Bet"] = pd.to_numeric(df["Bet"], errors="coerce").fillna(0)
     df = df.dropna(subset=["Creation Date"])
 
-    # 🔹 Normalização do nome do jogo
     df["Game Name Normalizado"] = df["Game Name"].str.lower().str.strip()
 
     # =========================
-    # Filtro de data e hora
+    # Filtro
     # =========================
-    st.subheader("⏰ Filtro de Data e Hora")
+    st.subheader("⏰ Filtro")
 
     col1, col2 = st.columns(2)
 
     with col1:
         data_inicio = st.date_input("Data inicial")
-        hora_inicio = st.text_input("Hora inicial (HH:MM)", value="00:00")
+        hora_inicio = st.time_input("Hora inicial")
 
     with col2:
         data_fim = st.date_input("Data final")
-        hora_fim = st.text_input("Hora final (HH:MM)", value="23:59")
+        hora_fim = st.time_input("Hora final")
 
-    try:
-        inicio = pd.to_datetime(f"{data_inicio} {hora_inicio}")
-        fim = pd.to_datetime(f"{data_fim} {hora_fim}")
-    except:
-        st.error("❌ Formato de hora inválido. Use HH:MM")
-        st.stop()
+    inicio = pd.to_datetime(f"{data_inicio} {hora_inicio}")
+    fim = pd.to_datetime(f"{data_fim} {hora_fim}")
 
     df = df[(df["Creation Date"] >= inicio) & (df["Creation Date"] <= fim)]
 
     if df.empty:
-        st.warning("⚠️ Nenhuma aposta encontrada para o período selecionado.")
+        st.warning("⚠️ Nenhum dado encontrado.")
         st.stop()
 
     # =========================
@@ -124,11 +107,10 @@ if arquivo:
     if len(clientes) == 1:
         st.markdown(f"### 👤 Cliente: **{clientes[0]}**")
     else:
-        st.markdown("### 👤 Clientes encontrados:")
         st.write(clientes)
 
     # =========================
-    # Elegibilidade (NORMALIZADA)
+    # Elegibilidade
     # =========================
     df["Elegivel"] = df["Game Name Normalizado"].isin(JOGOS_ELEGIVEIS_NORMALIZADOS)
 
@@ -142,74 +124,99 @@ if arquivo:
     total_elegiveis = df_elegiveis["Bet"].sum()
     total_nao_elegiveis = df_nao_elegiveis["Bet"].sum()
 
+    percentual_elegivel = (total_elegiveis / total_geral * 100) if total_geral > 0 else 0
+
     # =========================
     # Cards
     # =========================
-    st.subheader("💵 Resumo Financeiro")
+    st.subheader("💵 Resumo")
 
-    colA, colB, colC = st.columns(3)
+    colA, colB, colC, colD = st.columns(4)
 
     def card(titulo, valor, cor):
-        st.markdown(
-            f"""
-            <div style="padding:20px; border-radius:12px; background:{cor}; text-align:center;">
-                <h4 style="color:white;">{titulo}</h4>
-                <h2 style="color:white;">R$ {valor:,.2f}</h2>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        valor_formatado = f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        st.markdown(f"""
+        <div style="padding:20px; border-radius:12px; background:{cor}; text-align:center;">
+            <h4 style="color:white;">{titulo}</h4>
+            <h2 style="color:white;">{valor_formatado}</h2>
+        </div>
+        """, unsafe_allow_html=True)
 
     with colA:
-        card("Total Geral Apostado", total_geral, "#1565c0")
+        card("Total Geral", total_geral, "#1565c0")
 
     with colB:
-        card("Jogos Elegíveis", total_elegiveis, "#2e7d32")
+        card("Elegíveis", total_elegiveis, "#2e7d32")
 
     with colC:
-        card("Jogos Não Elegíveis", total_nao_elegiveis, "#c62828")
+        card("Não Elegíveis", total_nao_elegiveis, "#c62828")
+
+    with colD:
+        st.markdown(f"""
+        <div style="padding:20px; border-radius:12px; background:#6a1b9a; text-align:center;">
+            <h4 style="color:white;">% Elegível</h4>
+            <h2 style="color:white;">{percentual_elegivel:.2f}%</h2>
+        </div>
+        """, unsafe_allow_html=True)
 
     # =========================
-    # Função tabela
+    # ALERTA
+    # =========================
+    if percentual_elegivel < 30:
+        st.warning("⚠️ Baixo percentual de jogos elegíveis.")
+
+    # =========================
+    # Tabela formatada
     # =========================
     def gerar_tabela(df_base):
-    tabela = (
-        df_base
-        .groupby("Game Name")
-        .agg(
-            Quantidade_Rodadas=("Bet", "count"),
-            Total_Apostado=("Bet", "sum"),
-            Primeira_Aposta=("Creation Date", "min"),
-            Ultima_Aposta=("Creation Date", "max")
+        tabela = (
+            df_base
+            .groupby("Game Name")
+            .agg(
+                Quantidade_Rodadas=("Bet", "count"),
+                Total_Apostado=("Bet", "sum"),
+                Primeira_Aposta=("Creation Date", "min"),
+                Ultima_Aposta=("Creation Date", "max")
+            )
+            .reset_index()
+            .sort_values(by="Total_Apostado", ascending=False)
         )
-        .reset_index()
-        .sort_values(by="Total_Apostado", ascending=False)
-    )
 
-    # Formatação de datas
-    tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
-    tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+        tabela["Primeira_Aposta"] = tabela["Primeira_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
+        tabela["Ultima_Aposta"] = tabela["Ultima_Aposta"].dt.strftime("%d/%m/%Y %H:%M")
 
-    # 💰 Formatar valor + rodadas
-    tabela["Resumo"] = tabela.apply(
-        lambda row: f"R$ {row['Total_Apostado']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") ({row['Quantidade_Rodadas']} rodadas)",
-        axis=1
-    )
+        # 💰 Resumo formatado
+        tabela["Resumo"] = tabela.apply(
+            lambda row: f"R$ {row['Total_Apostado']:,.2f} ({row['Quantidade_Rodadas']} rodadas)",
+            axis=1
+        )
 
-    # 🔥 Manter só as colunas que importam
-    tabela = tabela[[
-        "Game Name",
-        "Resumo",
-        "Primeira_Aposta",
-        "Ultima_Aposta"
-    ]]
+        tabela["Resumo"] = tabela["Resumo"].str.replace(",", "X").str.replace(".", ",").str.replace("X", ".")
 
-    return tabela
+        tabela = tabela[[
+            "Game Name",
+            "Resumo",
+            "Primeira_Aposta",
+            "Ultima_Aposta"
+        ]]
+
+        return tabela
+
     # =========================
-    # Tabelas
+    # Exibição
     # =========================
     st.subheader("🟢 Jogos Elegíveis")
     st.dataframe(gerar_tabela(df_elegiveis), use_container_width=True)
 
     st.subheader("🔴 Jogos Não Elegíveis")
     st.dataframe(gerar_tabela(df_nao_elegiveis), use_container_width=True)
+
+    # =========================
+    # Download
+    # =========================
+    st.download_button(
+        "📥 Baixar Jogos Elegíveis",
+        gerar_tabela(df_elegiveis).to_csv(index=False),
+        "jogos_elegiveis.csv",
+        "text/csv"
+    )
