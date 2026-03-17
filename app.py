@@ -218,10 +218,10 @@ if arquivo:
         )
 
         if jogos_lista.empty:
-    jogos_texto = "Nenhum jogo elegível apostado"
-else:
-    jogos_texto = "\n".join(
-        [f"{jogo}: {formatar_brl(valor)}" for jogo, valor in jogos_lista.items()]
+            jogos_texto = "Nenhum jogo elegível apostado"
+        else:
+            jogos_texto = "\n".join(
+            [f"{jogo}: {formatar_brl(valor)}" for jogo, valor in jogos_lista.items()]
     )
 
         faltante = max(0, valor_necessario - total_elegiveis)
